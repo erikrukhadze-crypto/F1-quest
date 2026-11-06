@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Путь в Формулу 1: квест</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;700;800&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8ECF0; --surface:#FFFFFF; --ink:#141B23; --muted:#56626F; --line:#C5CED8;
+  --board:#10161D; --board-ink:#FFD21F;
+  --purple:#6A2FD1; --purple-tint:#EFE8FC;
+  --red:#C62B34; --red-tint:#FBE9EA;
+  --focus:#0B63CE;
+  --head:"Fira Sans Extra Condensed","Arial Narrow","Roboto Condensed",Impact,sans-serif;
+  --body:"PT Serif",Georgia,"Times New Roman",serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F151C; --surface:#18212B; --ink:#EAF0F5; --muted:#9AA7B4; --line:#2A3846;
+    --purple:#B18CFF; --purple-tint:#2A2142; --red:#FF6B73; --red-tint:#3A1F23; --focus:#7DB6FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F151C; --surface:#18212B; --ink:#EAF0F5; --muted:#9AA7B4; --line:#2A3846;
+  --purple:#B18CFF; --purple-tint:#2A2142; --red:#FF6B73; --red-tint:#3A1F23; --focus:#7DB6FF;
+  color-scheme:dark;
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 70px)}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--body); font-size:1.05rem; line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+body::before{
+  content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px);
+  background:var(--bg); z-index:10;
+}
+.wrap{max-width:640px; margin:0 auto; padding:0 18px 48px}
+
+/* HUD */
+.hud{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+  background:var(--bg); padding:12px 0 10px;
+}
+.hud-row{display:flex; align-items:center; justify-content:space-between; gap:12px; font-family:var(--head); font-weight:600; font-size:1.2rem}
+.hud-row b{font-weight:800; font-size:1.35rem}
+.hud-right{display:flex; align-items:center; gap:16px}
+.passes{display:flex; gap:5px}
+.pass{width:13px; height:18px; border:2px solid var(--ink); border-radius:3px; background:var(--board-ink)}
+.pass.off{background:transparent; opacity:.3}
+.sectors{display:flex; gap:4px; margin-top:8px}
+.sectors i{flex:1; height:6px; border-radius:2px; background:var(--line)}
+.sectors i.done{background:var(--purple)}
+.sectors i.now{background:var(--board-ink); outline:1.5px solid var(--ink); outline-offset:0}
+
+/* Pit board */
+.board{background:var(--board); color:var(--board-ink); border-radius:6px; padding:18px 18px 16px; margin:18px 0}
+.board .q{margin:0; font-family:var(--head); font-weight:700; font-size:1.55rem; line-height:1.2}
+.hero h1{margin:0; font-family:var(--head); font-weight:800; font-size:clamp(2.6rem,12vw,3.8rem); line-height:1}
+.hero .sub{margin:10px 0 0; font-family:var(--head); font-weight:600; font-size:1.3rem; color:#fff}
+
+h2.place{font-family:var(--head); font-weight:700; font-size:1.9rem; line-height:1.1; margin:22px 0 6px}
+.scene{margin:0; color:var(--muted); font-style:italic}
+.start p{margin:14px 0}
+.rules{padding-left:1.2em; margin:14px 0 22px}
+.rules li{margin:8px 0}
+
+/* Options */
+.opt{
+  display:block; width:100%; text-align:left; min-height:48px;
+  font:700 1.05rem/1.3 var(--body); color:var(--ink);
+  background:var(--surface); border:1.5px solid var(--line); border-radius:8px;
+  padding:13px 16px; margin:0 0 10px; cursor:pointer;
+}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt:focus-visible,.btn:focus-visible,summary:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
+.opt:disabled{cursor:default; color:var(--ink)}
+.opt.ok{background:var(--purple-tint); border-color:var(--purple)}
+.opt.bad{background:var(--red-tint); border-color:var(--red); text-decoration:line-through; text-decoration-thickness:1.5px}
+.opt.dim{opacity:.55}
+
+.feedback{min-height:1px; margin:6px 0}
+.miss{border-left:5px solid var(--red); background:var(--surface); padding:12px 16px; border-radius:0 8px 8px 0; margin:6px 0 14px}
+.miss p{margin:0}
+
+/* Fact card */
+.fact{border-left:5px solid var(--purple); background:var(--surface); padding:16px 18px 18px; border-radius:0 8px 8px 0; margin:18px 0}
+.fact h3{font-family:var(--head); font-weight:800; font-size:1.6rem; line-height:1.1; margin:0 0 8px; color:var(--purple)}
+.fact p{margin:0 0 10px}
+.fact p:last-child{margin-bottom:0}
+.fact .gain{font-family:var(--head); font-weight:700; color:var(--purple); font-size:1.1rem}
+
+.btn{
+  display:inline-block; font-family:var(--head); font-weight:800; font-size:1.3rem;
+  background:var(--board); color:var(--board-ink); border:0; border-radius:8px;
+  padding:12px 26px; min-height:48px; cursor:pointer; margin-top:6px;
+}
+.btn.alt{background:transparent; color:var(--ink); border:2px solid var(--ink)}
+
+/* End screens */
+.rank{font-family:var(--head); font-weight:800; font-size:clamp(2.2rem,10vw,3.2rem); line-height:1.05; margin:0}
+.big-score{font-family:var(--head); font-weight:700; font-size:1.5rem; margin:6px 0 0; color:#fff}
+.stories{margin:20px 0 22px}
+.stories h3{font-family:var(--head); font-size:1.5rem; margin:0 0 8px}
+details{background:var(--surface); border:1.5px solid var(--line); border-radius:8px; margin:0 0 8px; padding:0}
+summary{cursor:pointer; padding:12px 16px; font-weight:700; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+"; display:inline-block; width:1.2em; color:var(--purple); font-family:var(--head); font-weight:800}
+details[open] summary::before{content:"−"}
+details p{margin:0; padding:0 16px 14px}
+.best{color:var(--muted); font-size:.95rem; margin:6px 0 0}
+
+@media (prefers-reduced-motion: no-preference){
+  .fact{animation:rise .35s ease-out}
+  @keyframes rise{from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none}}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hud" class="hud" hidden></header>
+  <main id="app"></main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STAGES = [
+    {
+      place: "Паддок, первый вход",
+      scene: "Первый день стажёром. Механик Лино — тот, кто помнит все эпохи, — берёт тебя за рукав: «Начнём с самой старой команды», — и толкает тяжёлую дверь первого гаража.",
+      q: "Какая команда выступает в чемпионате мира Формулы 1 с самого первого сезона 1950 года и не пропустила ни одного сезона?",
+      options: ["McLaren", "Ferrari", "Williams"],
+      correct: 1,
+      hint: "Её родина — итальянский городок Маранелло.",
+      fact: {
+        title: "Лошадь лётчика-аса",
+        text: [
+          "Ferrari — единственная команда, которая стартует в каждом сезоне чемпионата с 1950 года. Энцо Феррари основал свою гоночную Scuderia ещё в 1929-м.",
+          "А вздыбленную лошадь на эмблему ему посоветовали родители Франческо Баракки — итальянского лётчика-аса Первой мировой, который рисовал такого коня на борту своего самолёта. Жёлтый фон — цвет родного города Энцо, Модены."
+        ]
+      }
+    },
+    {
+      place: "Спа, Бельгия, 1991",
+      scene: "«Теперь Бельгия, лето 1991-го, — Лино вытирает руки ветошью. — У команды Jordan перед гонкой образовалась дыра в составе. И на её место посадили парня, о котором тогда почти никто не слышал».",
+      q: "Почему молодой Михаэль Шумахер получил место в Jordan на Гран-при Бельгии 1991 года?",
+      options: [
+        "Основной гонщик попал под арест в Лондоне",
+        "Основной гонщик проспал самолёт",
+        "Команда выиграла его место в лотерее"
+      ],
+      correct: 0,
+      hint: "Дело закончилось судом, а не будильником.",
+      fact: {
+        title: "Дебют на велосипеде",
+        text: [
+          "Бертран Гашо поссорился с лондонским таксистом и пустил в ход перцовый баллончик — за это его посадили. Jordan срочно искала замену, и менеджер Шумахера уверил команду, что Михаэль прекрасно знает Спа. По легенде, трассу он до тех пор видел разве что с велосипеда.",
+          "В квалификации 22-летний новичок стал седьмым. В гонке на первом же круге отказало сцепление. Зато уже на следующем этапе в Монце Шумахер сидел в Benetton — а потом выиграл семь титулов."
+        ]
+      }
+    },
+    {
+      place: "Монако, поворот Портье",
+      scene: "Узкие улицы Монако. Лино кивает на ограждение у Портье: «Здесь один человек был королём. Но однажды корона слетела именно в этом повороте».",
+      q: "Сколько раз Айртон Сенна выиграл Гран-при Монако?",
+      options: ["4 раза", "6 раз", "8 раз"],
+      correct: 1,
+      hint: "Пять побед подряд — и ещё одна чуть позже.",
+      fact: {
+        title: "Король, который ушёл пешком",
+        text: [
+          "Шесть побед в Монако — рекорд, который никто так и не побил. Но самая известная история Сенны здесь про поражение.",
+          "В 1988 году он лидировал с отрывом больше пятидесяти секунд, но за одиннадцать кругов до финиша на Портье потерял концентрацию и врезался в ограждение. Расстроенный, он не пошёл в боксы, а ушёл пешком в свою квартиру неподалёку — и не выходил на связь с командой."
+        ]
+      }
+    },
+    {
+      place: "Нюрбургринг, август 1976",
+      scene: "«В 1976-м на Нюрбургринге загорелся болид Ники Лауды, — тихо говорит Лино. — Его вытащили из огня. А дальше случилось то, во что до сих пор трудно поверить».",
+      q: "Через какое время после страшной аварии Ники Лауда снова сел за руль гоночного болида?",
+      options: ["Через 6 недель", "Через 6 месяцев", "Только в следующем сезоне"],
+      correct: 0,
+      hint: "Он пропустил всего две гонки.",
+      fact: {
+        title: "Полбалла и сорок два дня",
+        text: [
+          "Через 42 дня Лауда вышел на старт в Монце и занял четвёртое место. В больнице ему уже читали отходную молитву, а шлем пришлось переделывать из-за повязок, которые кровоточили прямо под ним.",
+          "Титул в 1976-м он потерял Джеймсу Ханту — на одно очко, когда отказался ехать в ливень на Фудзи. Зато в 1977-м взял его снова. А в 1984-м выиграл чемпионат у Проста всего на полбалла: гонку в Монако остановили раньше времени, и очки дали вдвое меньше."
+        ]
+      }
+    },
+    {
+      place: "Гавана, 1958",
+      scene: "Лино достаёт из кармана потёртую открытку: «Гавана. Пятикратный чемпион Фанхио приехал за гонкой, а получил приключение, которое не купишь ни за какие деньги».",
+      q: "Что случилось с Хуаном Мануэлем Фанхио перед Гран-при Кубы 1958 года?",
+      options: [
+        "Его похитили повстанцы",
+        "Он потерял паспорт",
+        "Его машину отправили не в тот порт"
+      ],
+      correct: 0,
+      hint: "Это была политика, а не авария и не бюрократия.",
+      fact: {
+        title: "Самый вежливый плен в истории",
+        text: [
+          "Фанхио забрали из отеля бойцы Движения 26 июля — сторонники Фиделя Кастро. Его держали в комфортных условиях и отпустили сразу после гонки. Позже он говорил, что похитители обращались с ним хорошо.",
+          "Гонка закончилась трагически: машина вылетела в толпу зрителей. Кстати, пять титулов Фанхио выиграл на машинах четырёх разных марок: Alfa Romeo, Mercedes, Ferrari и Maserati."
+        ]
+      }
+    },
+    {
+      place: "Интерлагос, Бразилия, 2008",
+      scene: "Финал сезона 2008-го. Идёт дождь, на табло — последний круг. «Тут кубок, который уже успели праздновать, выскользнул из рук», — говорит Лино.",
+      q: "На сколько очков Льюис Хэмилтон опередил Фелипе Массу в чемпионате 2008 года?",
+      options: ["На 1 очко", "На 5 очков", "На 10 очков"],
+      correct: 0,
+      hint: "Дальше уже некуда.",
+      fact: {
+        title: "Тридцать секунд чемпиона",
+        text: [
+          "Масса выиграл ту гонку на домашней трассе и почти полминуты был чемпионом мира: его семья и боксы Ferrari уже ликовали.",
+          "Но на последнем повороте последнего круга Хэмилтон обошёл Тимо Глока — тот выбрал сухие шины и буксовал на мокром асфальте. Пятое место принесло Льюису титул ровно с одним очком запаса. На тот момент он стал самым молодым чемпионом в истории."
+        ]
+      }
+    },
+    {
+      place: "Абу-Даби, 2012",
+      scene: "Лино вставляет тебе в ухо наушник радиосвязи: «Послушай, как общаются пилот и инженер. Один из них был немногословен, и его фразу потом знал весь мир».",
+      q: "Что ответил Кими Райкконен по радио инженеру, который слишком часто давал ему подсказки?",
+      options: [
+        "«Оставьте меня в покое, я знаю, что делаю»",
+        "«Передайте Феттелю привет»",
+        "«Где моё мороженое?»"
+      ],
+      correct: 0,
+      hint: "Это сказано по радио и стало мемом на все времена.",
+      fact: {
+        title: "Кими знает, что делает",
+        text: [
+          "Фраза разлетелась по всему миру, а Кими в той гонке на Lotus действительно знал, что делает: он выиграл Гран-при Абу-Даби 2012.",
+          "Вообще лаконичность — его фирменный стиль. В 2007 году он стал чемпионом с Ferrari, опередив Хэмилтона и Алонсо всего на одно очко."
+        ]
+      }
+    },
+    {
+      place: "Мельбурн, 2015",
+      scene: "«Теперь прыжок в 2015-й, — говорит Лино. — На старте новичок, которому ещё рано бриться. Угадай, насколько рано».",
+      q: "Сколько лет было Максу Ферстаппену, когда он дебютировал в Формуле 1?",
+      options: ["17 лет", "19 лет", "21 год"],
+      correct: 0,
+      hint: "Права на обычную машину ему ещё не давали.",
+      fact: {
+        title: "Болид есть, прав нет",
+        text: [
+          "17 лет и 166 дней — самый молодой гонщик в истории Ф1 на старте. Забавно, что на дорогах он ещё не мог сесть за руль: водительское удостоверение Макс получил только в день своего 18-летия.",
+          "После этого дебюта FIA ввела минимальный возраст 18 лет для суперлицензии. А в 2016-м Ферстаппен выиграл Гран-при Испании в первой же гонке за Red Bull — в 18 лет и 228 дней, став самым молодым победителем."
+        ]
+      }
+    },
+    {
+      place: "Брэкли, Англия, зима 2008",
+      scene: "Лино понижает голос: «Тут одна команда едва не исчезла. Honda ушла из Формулы 1, сотрудников собирались распустить. А потом произошло нечто странное с ценой».",
+      q: "Сколько заплатил Росс Браун, когда в 2009 году выкупил команду у Honda?",
+      options: ["1 фунт", "1 миллион фунтов", "100 миллионов фунтов"],
+      correct: 0,
+      hint: "Меньше, чем стоит чашка кофе.",
+      fact: {
+        title: "Команда за один фунт",
+        text: [
+          "По рассказам, Honda фактически отдала команду Брауну за символический фунт. Машина была белой, потому что на яркую раскраску и спонсоров денег не хватало, а двигатели Mercedes поставили в последний момент.",
+          "Результат ошеломил всех: Brawn GP выиграла 8 из 17 гонок, Дженсон Баттон — шесть из первых семи, и команда взяла оба титула. А уже в 2010-м её выкупила Mercedes."
+        ]
+      }
+    },
+    {
+      place: "Сезон 1988",
+      scene: "Лино стучит по шлему Сенны на стенде: «Две машины, два лучших пилота и мотор Honda. Эта команда почти не знала поражений».",
+      q: "Сколько гонок из 16 выиграла McLaren-Honda в сезоне 1988 года?",
+      options: ["15", "12", "Все 16"],
+      correct: 0,
+      hint: "Только одну гонку у неё всё же отняли.",
+      fact: {
+        title: "Единственное поражение",
+        text: [
+          "За два круга до финиша в Монце Сенна попытался обойти отстающего Жана-Луи Шлессера и столкнулся с ним. Ferrari выиграла гонку дублем — меньше чем через месяц после смерти Энцо Феррари.",
+          "Остальные 15 побед Сенна и Прост поделили: 8 и 7. А через 35 лет, в 2023-м, Red Bull побила этот рекорд по доле побед — 21 из 22."
+        ]
+      }
+    },
+    {
+      place: "Бахрейн, 2020",
+      scene: "Лино на секунду замолкает: «Тут я видел самое страшное и самое счастливое. Машина разлетелась, вспыхнул огонь. А потом пилот вышел из него сам».",
+      q: "Что помогло Ромену Грожану выжить в аварии в Бахрейне, когда его болид разорвало и охватило пламенем?",
+      options: ["Система Halo", "Подушка безопасности", "Огнеупорный бак"],
+      correct: 0,
+      hint: "Её ввели в 2018 году, и многие тогда считали её уродливой.",
+      fact: {
+        title: "Дуга, которую не любили",
+        text: [
+          "Halo — титановая дуга над кокпитом. В Бахрейне она не дала удару ограждения добраться до головы пилота. Грожан провёл в огне около 28 секунд и выбрался с ожогами рук.",
+          "Ирония в том, что сам Ромен когда-то критиковал Halo, а потом признал: она спасла ему жизнь."
+        ]
+      }
+    },
+    {
+      place: "Абу-Даби, 2010",
+      scene: "Последняя остановка. Лино вручает тебе пропуск: «Угадаешь — и ты в паддоке навсегда. Тут молодой немец сделал то, чего до него не делал никто».",
+      q: "Кто стал самым молодым чемпионом мира в истории Формулы 1?",
+      options: ["Льюис Хэмилтон", "Себастьян Феттель", "Макс Ферстаппен"],
+      correct: 1,
+      hint: "Ему было 23 года, и он дал имена всем своим болидам.",
+      fact: {
+        title: "Болиды с именами",
+        text: [
+          "Феттель выиграл финал 2010 года в Абу-Даби и стал чемпионом в 23 года и 134 дня. Лидер чемпионата Алонсо в той гонке застрял за Виталием Петровым и упустил титул.",
+          "Феттель обожал давать имена машинам: Kinky Kylie, Randy Mandy, Hungry Heidi — у каждого болида был свой характер. А потом он выиграл четыре чемпионата подряд — с 2010 по 2013 год."
+        ]
+      }
+    }
+  ];
+
+  var MAX_LIVES = 3;
+  var PTS = [100, 60, 30];
+  var app = document.getElementById("app");
+  var hud = document.getElementById("hud");
+  var S = null;
+
+  function h(tag, cls, text){
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function shuffle(a){
+    var r = a.slice();
+    for (var i = r.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return r;
+  }
+  function bestGet(){
+    try { return parseInt(localStorage.getItem("f1quest-best") || "0", 10) || 0; }
+    catch(e){ return 0; }
+  }
+  function bestSet(v){
+    try { if (v > bestGet()) localStorage.setItem("f1quest-best", String(v)); }
+    catch(e){}
+  }
+  function reset(){
+    S = { i: 0, lives: MAX_LIVES, score: 0, misses: 0, done: false, learned: [] };
+  }
+
+  function renderHud(){
+    hud.hidden = false;
+    hud.innerHTML = "";
+    var row = h("div", "hud-row");
+    var lap = h("div", "lap");
+    lap.append("Круг ", h("b", "", String(Math.min(S.i + 1, STAGES.length))), " из " + STAGES.length);
+    var right = h("div", "hud-right");
+    var sc = h("div", "score");
+    sc.append("Очки ", h("b", "", String(S.score)));
+    var passes = h("div", "passes");
+    passes.setAttribute("role", "img");
+    passes.setAttribute("aria-label", "Допусков осталось: " + S.lives);
+    for (var k = 0; k < MAX_LIVES; k++){
+      passes.append(h("span", "pass" + (k < S.lives ? "" : " off")));
+    }
+    right.append(sc, passes);
+    row.append(lap, right);
+    var sectors = h("div", "sectors");
+    for (var s = 0; s < STAGES.length; s++){
+      sectors.append(h("i", s < S.i ? "done" : (s === S.i ? "now" : "")));
+    }
+    hud.append(row, sectors);
+  }
+
+  function factCard(st, gain){
+    var card = h("div", "fact");
+    card.append(h("h3", "", st.fact.title));
+    st.fact.text.forEach(function(t){ card.append(h("p", "", t)); });
+    if (gain) card.append(h("p", "gain", gain));
+    return card;
+  }
+
+  function renderStart(){
+    hud.hidden = true;
+    app.innerHTML = "";
+    var sec = h("section", "start");
+    var board = h("div", "board hero");
+    board.append(h("h1", "", "Путь в Формулу 1"), h("p", "sub", "Двенадцать историй из паддока"));
+    sec.append(board);
+    sec.append(h("p", "", "Сегодня твой первый день стажёром в паддоке. Механик Лино помнит все эпохи Формулы 1 и проведёт тебя по гаражам разных лет."));
+    var ul = h("ul", "rules");
+    [
+      "Отвечай на вопросы Лино. За верный ответ он расскажет настоящую историю: о гонщиках, командах и забавных случаях.",
+      "У тебя три допуска. Каждая ошибка забирает один. Потеряешь все — вернёшься на трибуну.",
+      "Чем меньше ошибок на вопросе, тем больше очков."
+    ].forEach(function(t){ ul.append(h("li", "", t)); });
+    sec.append(ul);
+    var go = h("button", "btn", "Войти в паддок");
+    go.type = "button";
+    go.addEventListener("click", function(){ reset(); renderStage(); });
+    sec.append(go);
+    var b = bestGet();
+    if (b > 0) sec.append(h("p", "best", "Лучший результат: " + b + " очков"));
+    app.append(sec);
+    window.scrollTo(0, 0);
+  }
+
+  function renderStage(){
+    var st = STAGES[S.i];
+    S.misses = 0;
+    S.done = false;
+    renderHud();
+    app.innerHTML = "";
+    var sec = h("section", "stage");
+    sec.append(h("h2", "place", st.place), h("p", "scene", st.scene));
+    var board = h("div", "board");
+    board.append(h("p", "q", st.q));
+    sec.append(board);
+
+    var list = h("div", "opts");
+    var order = shuffle(st.options.map(function(t, idx){ return { t: t, idx: idx }; }));
+    order.forEach(function(o){
+      var b = h("button", "opt", o.t);
+      b.type = "button";
+      b.addEventListener("click", function(){ answer(o.idx, b, list); });
+      list.append(b);
+    });
+    sec.append(list);
+
+    var fb = h("div", "feedback");
+    fb.id = "fb";
+    fb.setAttribute("aria-live", "polite");
+    sec.append(fb);
+    app.append(sec);
+    window.scrollTo(0, 0);
+  }
+
+  function answer(idx, btn, list){
+    if (S.done) return;
+    var st = STAGES[S.i];
+    var fb = document.getElementById("fb");
+    fb.innerHTML = "";
+
+    if (idx === st.correct){
+      S.done = true;
+      var gain = PTS[Math.min(S.misses, PTS.length - 1)];
+      S.score += gain;
+      S.learned.push(st.fact);
+      Array.prototype.forEach.call(list.children, function(b){
+        b.disabled = true;
+        if (b === btn) b.classList.add("ok"); else if (!b.classList.contains("bad")) b.classList.add("dim");
+      });
+      renderHud();
+      var card = factCard(st, "+" + gain + " очков");
+      fb.append(card);
+      var last = (S.i === STAGES.length - 1);
+      var next = h("button", "btn", last ? "Получить пропуск" : "Дальше");
+      next.type = "button";
+      next.addEventListener("click", function(){
+        S.i++;
+        if (last) renderEnd(); else renderStage();
+      });
+      fb.append(next);
+      card.scrollIntoView({ block: "nearest" });
+    } else {
+      S.misses++;
+      S.lives--;
+      btn.classList.add("bad");
+      btn.disabled = true;
+      renderHud();
+      if (S.lives <= 0){
+        S.done = true;
+        Array.prototype.forEach.call(list.children, function(b){ b.disabled = true; });
+        var m = h("div", "miss");
+        m.append(h("p", "", "Допуски закончились. Лино вздыхает и провожает тебя к выходу."));
+        fb.append(m);
+        var more = h("button", "btn", "Дальше");
+        more.type = "button";
+        more.addEventListener("click", renderOver);
+        fb.append(more);
+      } else {
+        var miss = h("div", "miss");
+        miss.append(h("p", "", "Мимо. Минус один допуск. Подсказка Лино: " + st.hint));
+        fb.append(miss);
+      }
+    }
+  }
+
+  function renderOver(){
+    var st = STAGES[S.i];
+    bestSet(S.score);
+    hud.hidden = true;
+    app.innerHTML = "";
+    var sec = h("section", "over");
+    var board = h("div", "board hero");
+    board.append(h("h1", "rank", "Вылет на круге " + (S.i + 1)), h("p", "big-score", "Очки: " + S.score));
+    sec.append(board);
+    sec.append(h("p", "", "Допусков не осталось, и тебя проводили на трибуну. Но историю этого круга Лино всё равно расскажет. Верный ответ: " + st.options[st.correct] + "."));
+    sec.append(factCard(st));
+    var again = h("button", "btn", "Пройти заново");
+    again.type = "button";
+    again.addEventListener("click", function(){ reset(); renderStage(); });
+    sec.append(again);
+    app.append(sec);
+    window.scrollTo(0, 0);
+  }
+
+  function rankFor(score){
+    if (score >= 1000) return "Руководитель команды";
+    if (score >= 750) return "Гоночный инженер";
+    if (score >= 450) return "Механик";
+    if (score >= 200) return "Стажёр с допуском";
+    return "Зритель на трибуне";
+  }
+
+  function renderEnd(){
+    bestSet(S.score);
+    renderHud();
+    hud.hidden = true;
+    app.innerHTML = "";
+    var sec = h("section", "end");
+    var board = h("div", "board hero");
+    board.append(h("h1", "rank", rankFor(S.score)), h("p", "big-score", "Очки: " + S.score + " из " + (STAGES.length * PTS[0])));
+    sec.append(board);
+    sec.append(h("p", "", "Лино ставит печать на твой пропуск: «Добро пожаловать в паддок». Вот все истории, которые ты услышал."));
+
+    var box = h("div", "stories");
+    box.append(h("h3", "", "Твоя книжка историй"));
+    S.learned.forEach(function(f){
+      var d = document.createElement("details");
+      var s = h("summary", "", f.title);
+      d.append(s);
+      d.append(h("p", "", f.text.join(" ")));
+      box.append(d);
+    });
+    sec.append(box);
+
+    var again = h("button", "btn", "Пройти заново");
+    again.type = "button";
+    again.addEventListener("click", function(){ reset(); renderStage(); });
+    sec.append(again);
+    var b = bestGet();
+    if (b > 0) sec.append(h("p", "best", "Лучший результат: " + b + " очков"));
+    app.append(sec);
+    window.scrollTo(0, 0);
+  }
+
+  reset();
+  renderStart();
+})();
+</script>
+</body>
+</html>
